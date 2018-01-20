@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Message encryption to server</title>
+</head>
+<body>
+    <p>Hey, now we shall load the key, tak</p>
+    <form action="/" method="post" id="f">
+        <input type="text" name="msg" id="message">
+        <button type="button" onclick="encrypt()">Encrypt please</button>
+        <input type="submit" value="send encrypted!">
+    </form>
+
+    <script>
+
+        function encrypt() {
+            var el = document.getElementById("message");
+            console.log(el.value);
+            var value = el.value;
+            var enc = new TextEncoder("utf-8");
+            value = enc.encode(value);
+            console.log(value);
+            console.log(publicKey);
+
+            window.crypto.subtle.encrypt(
+                {
+                    name: "RSA-OAEP",
+                    //label: Uint8Array([...]) //optional
+                },
+                publicKey, //from generateKey or importKey above
+                value //ArrayBuffer of data you want to encrypt
+            )
+            .then(function(encrypted){
+                //returns an ArrayBuffer containing the encrypted data
+                console.log("OK");
+                //document.getElementById("message").value = encrypted;
+            })
+            .catch(function(err){
+                console.log("error")
+                console.error(err);
+            });
+        }
+        let xhr = new XMLHttpRequest();
+        let publicKey;
+        xhr.onreadystatechange = () => {
+            if (xhr.readyState == XMLHttpRequest.DONE) {
+                window.crypto.subtle.importKey(
+                    "jwk",
+                    JSON.parse(xhr.responseText),
+                    {
+                        name: "RSA-OAEP",
+                        hash: {name: "SHA-256"}
+                    },
+                    true,
+                    ["encrypt"]
+                ).then( function (p) {
+                    publicKey = p;
+                    console.log(publicKey);
+                }).catch(function(err) {
+                    console.log(err);
+                })
+            }
+        }
+        xhr.open('GET', '//localhost:8080/public');
+        xhr.send(null);
+    </script>
+</body>
+</html>
