@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"time"
 )
 
 func main() {
@@ -27,21 +28,27 @@ func main() {
 	fmt.Println("Press enter to start the quiz")
 	s.Scan()
 
+	timer := time.NewTimer(time.Second * 30)
+
 	cF := csv.NewReader(f)
 	rc, err := cF.Read()
 	for err != io.EOF {
-		total++
-		fmt.Printf("%s: ", rc[0])
-		s.Scan()
-		a := s.Text()
+		select {
+		case <-timer.C:
+			break
+		default:
+			total++
+			fmt.Printf("%s: ", rc[0])
+			s.Scan()
+			a := s.Text()
 
-		if a == rc[1] {
-			correct++
+			if a == rc[1] {
+				correct++
+			}
+			rc, err = cF.Read()
 		}
-		rc, err = cF.Read()
 	}
 
 	fmt.Println()
-	fmt.Println("Correct/Total")
-	fmt.Printf("%d/%d\n", correct, total)
+	fmt.Printf("Correct/Total: %d/%d\n", correct, total)
 }
