@@ -23,23 +23,29 @@ func (uc UserController) GetUser(w http.ResponseWriter, r *http.Request, p httpr
 	id := p.ByName("id")
 
 	// Verify id is ObjectId hex representation, otherwise return status not found
-	if id != "" {
+	if id == "" {
 		w.WriteHeader(http.StatusNotFound) // 404
 		return
 	}
 
 	// composite literal
-	var u *models.User
-	var ok bool
+	var u models.User
 
 	// Fetch user
-	if u, ok = uc.db[id]; !ok {
+	if uP, ok := uc.db[id]; !ok {
+		fmt.Println(id)
 		w.WriteHeader(404)
 		return
+	} else {
+		u = *uP
 	}
 
 	// Marshal provided interface into JSON structure
-	uj, _ := json.Marshal(u)
+	uj, err := json.Marshal(u)
+
+	if err != nil {
+		panic(err)
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK) // 200
@@ -47,16 +53,15 @@ func (uc UserController) GetUser(w http.ResponseWriter, r *http.Request, p httpr
 }
 
 func (uc UserController) CreateUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	var u *models.User
+	var u models.User
 
-	json.NewDecoder(r.Body).Decode(u)
+	json.NewDecoder(r.Body).Decode(&u)
 
-	fmt.Printf("%v\n", u)
+	// create ID
+	u.ID = uuid.NewV4().String()
 
-	// create bson ID
-	id := uuid.NewV4().String()
-
-	uc.db[id] = u
+	fmt.Printf("%s: %+v\n", u)
+	uc.db[u.ID] = &u
 
 	uj, _ := json.Marshal(u)
 
@@ -68,7 +73,7 @@ func (uc UserController) CreateUser(w http.ResponseWriter, r *http.Request, _ ht
 func (uc UserController) DeleteUser(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	id := p.ByName("id")
 
-	if id != "" {
+	if id == "" {
 		w.WriteHeader(404)
 		return
 	}
